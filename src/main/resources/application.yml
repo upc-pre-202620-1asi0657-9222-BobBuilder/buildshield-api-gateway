@@ -1,0 +1,174 @@
+spring:
+  application:
+    name: buildshield-api-gateway
+  profiles:
+    default: local
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # El gateway resuelve CORS; si un servicio también manda cabeceras CORS o su propio
+          # X-Correlation-Id, se conserva solo la primera (la del gateway) para no romper el navegador.
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials X-Correlation-Id, RETAIN_FIRST
+            - DedupeResponseHeader=Vary Access-Control-Expose-Headers, RETAIN_UNIQUE
+          # Tabla de rutas del plan de microservicios (sección 4). La custodia de un despacho va a
+          # auditoría y por eso tiene prioridad (order -1) sobre la regla general de dispatches.
+          routes:
+            - id: audit-dispatch-custody
+              uri: ${buildshield.services.audit}
+              order: -1
+              predicates:
+                - Path=/api/v1/dispatches/*/custody
+            - id: iam
+              uri: ${buildshield.services.iam}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**
+            - id: organization
+              uri: ${buildshield.services.organization}
+              predicates:
+                - Path=/api/v1/organizations/**,/api/v1/worksites/**,/api/v1/warehouses/**,/api/v1/materials/**,/api/v1/assignments/**
+            - id: inventory
+              uri: ${buildshield.services.inventory}
+              predicates:
+                - Path=/api/v1/stock/**
+            - id: ordering
+              uri: ${buildshield.services.ordering}
+              predicates:
+                - Path=/api/v1/orders/**,/api/v1/dispatches/**,/api/v1/receptions/**
+            - id: discrepancy
+              uri: ${buildshield.services.discrepancy}
+              predicates:
+                - Path=/api/v1/discrepancies/**
+            - id: subscription
+              uri: ${buildshield.services.subscription}
+              predicates:
+                - Path=/api/v1/subscriptions/**,/api/v1/plans/**
+            - id: notification
+              uri: ${buildshield.services.notification}
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: audit
+              uri: ${buildshield.services.audit}
+              predicates:
+                - Path=/api/v1/audit/**
+            # Especificación OpenAPI de cada servicio (cada uno la sirve en /api/v1/api-docs), para el
+            # Swagger agregado del gateway.
+            - id: iam-api-docs
+              uri: ${buildshield.services.iam}
+              predicates:
+                - Path=/v3/api-docs/iam
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: organization-api-docs
+              uri: ${buildshield.services.organization}
+              predicates:
+                - Path=/v3/api-docs/organization
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: inventory-api-docs
+              uri: ${buildshield.services.inventory}
+              predicates:
+                - Path=/v3/api-docs/inventory
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: ordering-api-docs
+              uri: ${buildshield.services.ordering}
+              predicates:
+                - Path=/v3/api-docs/ordering
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: discrepancy-api-docs
+              uri: ${buildshield.services.discrepancy}
+              predicates:
+                - Path=/v3/api-docs/discrepancy
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: subscription-api-docs
+              uri: ${buildshield.services.subscription}
+              predicates:
+                - Path=/v3/api-docs/subscription
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: notification-api-docs
+              uri: ${buildshield.services.notification}
+              predicates:
+                - Path=/v3/api-docs/notification
+              filters:
+                - SetPath=/api/v1/api-docs
+            - id: audit-api-docs
+              uri: ${buildshield.services.audit}
+              predicates:
+                - Path=/v3/api-docs/audit
+              filters:
+                - SetPath=/api/v1/api-docs
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,gateway
+  endpoint:
+    health:
+      show-details: never
+    gateway:
+      access: read-only
+
+# Swagger agregado: /swagger-ui.html lista la especificación de cada servicio a través del gateway.
+# La especificación propia del gateway (vacía) se mueve a /gateway/api-docs para dejar libre /v3/api-docs/<svc>.
+springdoc:
+  api-docs:
+    path: /gateway/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls-primary-name: iam
+    urls:
+      - name: iam
+        url: /v3/api-docs/iam
+      - name: organization
+        url: /v3/api-docs/organization
+      - name: inventory
+        url: /v3/api-docs/inventory
+      - name: ordering
+        url: /v3/api-docs/ordering
+      - name: discrepancy
+        url: /v3/api-docs/discrepancy
+      - name: subscription
+        url: /v3/api-docs/subscription
+      - name: notification
+        url: /v3/api-docs/notification
+      - name: audit
+        url: /v3/api-docs/audit
+
+buildshield:
+  # URI de cada microservicio (puertos del plan, sección 1). En docker-compose se pasan por variable.
+  services:
+    iam: ${IAM_URI:http://localhost:8081}
+    organization: ${ORGANIZATION_URI:http://localhost:8082}
+    inventory: ${INVENTORY_URI:http://localhost:8083}
+    ordering: ${ORDERING_URI:http://localhost:8084}
+    discrepancy: ${DISCREPANCY_URI:http://localhost:8085}
+    subscription: ${SUBSCRIPTION_URI:http://localhost:8086}
+    notification: ${NOTIFICATION_URI:http://localhost:8087}
+    audit: ${AUDIT_URI:http://localhost:8088}
+  security:
+    # Emisor de los tokens (IAM) y clave pública RSA en PEM, la misma que usan los servicios.
+    issuer: buildshield-iam
+    jwt-public-key: ${BUILDSHIELD_JWT_PUBLIC_KEY}
+    allowed-origins: ${BUILDSHIELD_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    public-paths:
+      - /api/v1/auth/sign-up
+      - /api/v1/auth/sign-in
+      - /api/v1/auth/refresh
+      - /api/v1/auth/password-reset
+      - /api/v1/auth/password-reset/**
+      - /actuator/health
+      - /actuator/health/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /webjars/**
+      - /gateway/api-docs/**
+      - /v3/api-docs/**

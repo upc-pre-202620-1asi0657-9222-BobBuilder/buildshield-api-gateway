@@ -1,0 +1,27 @@
+# Perfil prod: toda la configuración llega por variables de entorno, sin valores por defecto.
+buildshield:
+  services:
+    iam: ${IAM_URI}
+    organization: ${ORGANIZATION_URI}
+    inventory: ${INVENTORY_URI}
+    ordering: ${ORDERING_URI}
+    discrepancy: ${DISCREPANCY_URI}
+    subscription: ${SUBSCRIPTION_URI}
+    notification: ${NOTIFICATION_URI}
+    audit: ${AUDIT_URI}
+  security:
+    jwt-public-key: ${BUILDSHIELD_JWT_PUBLIC_KEY}
+    allowed-origins: ${BUILDSHIELD_CORS_ALLOWED_ORIGINS}
+
+# En producción no se publica la documentación ni la tabla de rutas.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
