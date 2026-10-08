@@ -64,6 +64,18 @@ class SecurityTest extends GatewayTestBase {
     }
 
     @Test
+    void evidence_content_passes_without_token_and_other_evidence_routes_do_not() {
+        String path = "/api/v1/discrepancies/7/evidences/9/content";
+        client().get().uri(path + "?token=firma")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.service").isEqualTo("discrepancy")
+                .jsonPath("$.path").isEqualTo(path);
+        client().get().uri("/api/v1/discrepancies/7/evidences").exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
     void health_is_public() {
         client().get().uri("/actuator/health")
                 .exchange()

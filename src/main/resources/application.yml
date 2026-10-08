@@ -172,3 +172,5 @@ buildshield:
       - /webjars/**
       - /gateway/api-docs/**
       - /v3/api-docs/**
+      # Foto de evidencia: la autoriza el token firmado de la URL en discrepancy-service
+      - /api/v1/discrepancies/*/evidences/*/content
