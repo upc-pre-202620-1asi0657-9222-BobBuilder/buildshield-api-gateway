@@ -27,8 +27,18 @@ Spring Security resource server, springdoc 2.8.17.
   responde 401 `{"code":"UNAUTHENTICATED",...}`. La autorización por rol la hace cada servicio, que además vuelve
   a validar el token.
 - **Rutas públicas** (sin token, aunque se envíe uno vencido): `/api/v1/auth/sign-up`, `sign-in`, `refresh`,
-  `password-reset/**`, `/actuator/health`, `/swagger-ui.html`, `/v3/api-docs/<svc>`. En el perfil `local`
-  también `/actuator/gateway/routes`.
+  `password-reset/**`, `/actuator/health`, `/swagger-ui.html`, `/v3/api-docs/<svc>`, la foto firmada de una
+  evidencia, `GET /api/v1/plans` (catálogo para la página de inicio, US08) y
+  `POST /api/v1/subscriptions/webhooks/stripe` (webhook de Stripe: lo autentica su firma en subscription-service).
+  En el perfil `local` también `/actuator/gateway/routes`.
+- **Cuenta en solo lectura (US10)**: si la suscripción de la organización del token venció, `POST`, `PUT`, `PATCH`
+  y `DELETE` responden 402 `{"code":"SUBSCRIPTION_READ_ONLY",...}`. Las lecturas pasan siempre, y también las
+  rutas para pagar y para la sesión (`/api/v1/subscriptions/**`, `/api/v1/plans/**`, `/api/v1/auth/**`). El estado
+  se lee de `GET /api/v1/subscriptions/current` de subscription-service con el token del usuario y se recuerda por
+  organización 30 s (`READ_ONLY_CACHE_TTL`); cualquier petición a `/api/v1/subscriptions/**` lo olvida, para que el
+  pago tenga efecto al instante. Si subscription-service no responde (`READ_ONLY_TIMEOUT`, 2 s), la petición pasa:
+  una caída de pagos no congela la operación. `READ_ONLY_ENABLED=false` lo desactiva. organization-service aplica la
+  misma regla con su copia local del plan (defensa en profundidad).
 - **Correlación**: reenvía `X-Correlation-Id` si llega y es válido; si no, genera un UUID. Va en la petición al
   servicio y en la respuesta (también en los 401).
 - **CORS**: se resuelve en el gateway para `http://localhost:4200` (`BUILDSHIELD_CORS_ALLOWED_ORIGINS`). Si un

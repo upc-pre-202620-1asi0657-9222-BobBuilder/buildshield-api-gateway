@@ -71,6 +71,11 @@ public final class TestTokens {
                 .expirationTime(Date.from(future.plus(Duration.ofMinutes(10)))));
     }
 
+    /** Token válido de un usuario con ese rol de esa organización. */
+    public static String forOrganization(UUID organizationId, String role) {
+        return sign(KEYS.getPrivate(), claims -> claims.claim("org", organizationId.toString()).claim("role", role));
+    }
+
     public static String withSubject(String subject) {
         return sign(KEYS.getPrivate(), claims -> claims.subject(subject));
     }
