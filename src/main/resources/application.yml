@@ -174,3 +174,18 @@ buildshield:
       - /v3/api-docs/**
       # Foto de evidencia: la autoriza el token firmado de la URL en discrepancy-service
       - /api/v1/discrepancies/*/evidences/*/content
+      # Catálogo de planes para la página de inicio (US08): sin sesión
+      - /api/v1/plans
+      # Webhook de Stripe (T74): lo autentica la firma Stripe-Signature en subscription-service
+      - /api/v1/subscriptions/webhooks/stripe
+  # US10: con la suscripción vencida, la cuenta queda en solo lectura. El gateway corta POST/PUT/PATCH/DELETE con 402
+  # (SUBSCRIPTION_READ_ONLY) y deja pasar las lecturas y lo necesario para pagar y para la sesión. El estado se lee de
+  # GET /api/v1/subscriptions/current (con el token del usuario) y se recuerda por organización.
+  read-only:
+    enabled: ${READ_ONLY_ENABLED:true}
+    cache-ttl: ${READ_ONLY_CACHE_TTL:PT30S}
+    timeout: ${READ_ONLY_TIMEOUT:PT2S}
+    exempt-paths:
+      - /api/v1/subscriptions/**
+      - /api/v1/plans/**
+      - /api/v1/auth/**

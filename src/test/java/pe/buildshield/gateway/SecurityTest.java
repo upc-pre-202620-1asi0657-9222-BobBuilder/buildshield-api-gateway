@@ -14,8 +14,9 @@ class SecurityTest extends GatewayTestBase {
 
     @ParameterizedTest
     @ValueSource(strings = {"/api/v1/users", "/api/v1/worksites", "/api/v1/stock", "/api/v1/orders",
-            "/api/v1/dispatches/1/custody", "/api/v1/discrepancies", "/api/v1/plans", "/api/v1/notifications",
-            "/api/v1/audit/events", "/api/v1/auth/sign-out"})
+            "/api/v1/dispatches/1/custody", "/api/v1/discrepancies", "/api/v1/subscriptions/current",
+            "/api/v1/subscriptions/checkout", "/api/v1/notifications", "/api/v1/audit/events",
+            "/api/v1/auth/sign-out"})
     void protected_routes_reject_requests_without_token(String path) {
         client().get().uri(path)
                 .exchange()
@@ -73,6 +74,24 @@ class SecurityTest extends GatewayTestBase {
                 .jsonPath("$.service").isEqualTo("discrepancy")
                 .jsonPath("$.path").isEqualTo(path);
         client().get().uri("/api/v1/discrepancies/7/evidences").exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void the_plan_catalog_and_the_stripe_webhook_are_public() {
+        client().get().uri("/api/v1/plans")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.service").isEqualTo("subscription")
+                .jsonPath("$.authorization").isEqualTo("");
+        client().post().uri("/api/v1/subscriptions/webhooks/stripe")
+                .header("Stripe-Signature", "t=1,v1=abc")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.service").isEqualTo("subscription")
+                .jsonPath("$.path").isEqualTo("/api/v1/subscriptions/webhooks/stripe");
+        client().post().uri("/api/v1/subscriptions/checkout").exchange().expectStatus().isUnauthorized();
     }
 
     @Test
