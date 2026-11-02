@@ -12,7 +12,7 @@ Spring Security resource server, springdoc 2.8.17.
 |---|---|---|
 | `/api/v1/auth/**`, `/api/v1/users/**` | iam | `http://localhost:8081` (`IAM_URI`) |
 | `/api/v1/organizations/**`, `/worksites/**`, `/warehouses/**`, `/materials/**`, `/assignments/**` | organization | `http://localhost:8082` (`ORGANIZATION_URI`) |
-| `/api/v1/stock/**` | inventory | `http://localhost:8083` (`INVENTORY_URI`) |
+| `/api/v1/stock/**` (incluye `counts` y `returns`) | inventory | `http://localhost:8083` (`INVENTORY_URI`) |
 | `/api/v1/dispatches/*/custody` (prioridad sobre dispatches) | audit | `http://localhost:8088` (`AUDIT_URI`) |
 | `/api/v1/orders/**`, `/dispatches/**`, `/receptions/**` | ordering | `http://localhost:8084` (`ORDERING_URI`) |
 | `/api/v1/discrepancies/**` | discrepancy | `http://localhost:8085` (`DISCREPANCY_URI`) |
@@ -23,9 +23,13 @@ Spring Security resource server, springdoc 2.8.17.
 ## Comportamiento
 
 - **JWT**: valida RS256, emisor `buildshield-iam`, vigencia máxima de 15 minutos y claims `sub`, `org`, `role`
-  (la misma política del Core) con `BUILDSHIELD_JWT_PUBLIC_KEY` (contenido PEM). Sin token o con token inválido
-  responde 401 `{"code":"UNAUTHENTICATED",...}`. La autorización por rol la hace cada servicio, que además vuelve
-  a validar el token.
+  (la misma política del Core) con `BUILDSHIELD_JWT_PUBLIC_KEY` (contenido PEM). El `role` debe ser uno de los tres
+  de la v4. Sin token o con token inválido responde 401 `{"code":"UNAUTHENTICATED",...}`. El permiso de cada endpoint
+  lo decide su servicio, que además vuelve a validar el token (ver `DESVIACIONES.md`).
+- **Servicio caído**: si no se puede conectar con el servicio o la conexión se corta a media respuesta, responde
+  503 `{"code":"SERVICE_UNAVAILABLE",...}` con `X-Correlation-Id` y CORS. La conexión se abandona a los 3 s
+  (`GATEWAY_CONNECT_TIMEOUT_MS`). Lo demás sigue al manejador por defecto. El gateway no limita cuánto tarda en
+  responder un servicio que sí aceptó la conexión.
 - **Rutas públicas** (sin token, aunque se envíe uno vencido): `/api/v1/auth/sign-up`, `sign-in`, `refresh`,
   `password-reset/**`, `/actuator/health`, `/swagger-ui.html`, `/v3/api-docs/<svc>`, la foto firmada de una
   evidencia, `GET /api/v1/plans` (catálogo para la página de inicio, US08) y
