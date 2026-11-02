@@ -99,7 +99,11 @@ public final class FakeServices {
             return;
         }
         String correlation = exchange.getRequestHeaders().getFirst("X-Correlation-Id");
+        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+        String received = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.ISO_8859_1);
         String body = "{\"service\":\"" + name + "\""
+                + ",\"contentType\":\"" + (contentType == null ? "" : contentType.replace(" ", "")) + "\""
+                + ",\"bodyContainsFile\":" + received.contains("filename=\"foto.jpg\"")
                 + ",\"method\":\"" + exchange.getRequestMethod() + "\""
                 + ",\"path\":\"" + exchange.getRequestURI().getPath() + "\""
                 + ",\"authorization\":\"" + (auth == null ? "" : auth) + "\""

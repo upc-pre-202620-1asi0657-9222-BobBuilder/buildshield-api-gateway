@@ -45,6 +45,19 @@ class ReadOnlyAccountTest extends GatewayTestBase {
                 .jsonPath("$.details").isArray();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/v1/discrepancies", "/api/v1/discrepancies/8/evidences", "/api/v1/stock/counts",
+            "/api/v1/stock/counts/1/review", "/api/v1/stock/returns", "/api/v1/stock/returns/1/receive"})
+    void counts_returns_and_manual_discrepancies_are_blocked_too(String path) {
+        FakeServices.READ_ONLY_ORGANIZATIONS.add(expired.toString());
+
+        client().post().uri(path)
+                .headers(h -> h.setBearerAuth(TestTokens.forOrganization(expired, "SITE_MANAGER")))
+                .exchange()
+                .expectStatus().isEqualTo(402)
+                .expectBody().jsonPath("$.code").isEqualTo("SUBSCRIPTION_READ_ONLY");
+    }
+
     @Test
     void reads_and_payment_routes_pass_for_a_read_only_organization() {
         FakeServices.READ_ONLY_ORGANIZATIONS.add(expired.toString());
