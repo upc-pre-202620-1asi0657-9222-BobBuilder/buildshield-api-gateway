@@ -76,6 +76,10 @@ public final class TestTokens {
         return sign(KEYS.getPrivate(), claims -> claims.claim("org", organizationId.toString()).claim("role", role));
     }
 
+    public static String withRole(String role) {
+        return sign(KEYS.getPrivate(), claims -> claims.claim("role", role));
+    }
+
     public static String withSubject(String subject) {
         return sign(KEYS.getPrivate(), claims -> claims.subject(subject));
     }

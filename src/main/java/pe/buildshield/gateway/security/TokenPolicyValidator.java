@@ -9,16 +9,20 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Reglas propias de BuildShield sobre el token (copiadas del Core): claims obligatorios, vigencia
- * máxima de 15 minutos ({@code exp - iat}) y emisión no futura.
+ * Reglas propias de BuildShield sobre el token (copiadas del Core): claims obligatorios, uno de los tres
+ * roles de la arquitectura v4, vigencia máxima de 15 minutos ({@code exp - iat}) y emisión no futura.
  */
 class TokenPolicyValidator implements OAuth2TokenValidator<Jwt> {
 
     private static final List<String> REQUIRED_CLAIMS = List.of(
             "sub", "jti", "iat", "exp", JwtClaimNames.ORGANIZATION_ID, JwtClaimNames.ROLE);
+
+    /** Los únicos roles que existen (v4, Anexo A.2). El permiso de cada endpoint lo decide su servicio. */
+    private static final Set<String> ROLES = Set.of("ADMINISTRATOR", "WAREHOUSE_MANAGER", "SITE_MANAGER");
 
     private final Duration maxLifetime;
     private final Duration clockSkew;
@@ -39,6 +43,9 @@ class TokenPolicyValidator implements OAuth2TokenValidator<Jwt> {
         }
         if (!isUuid(jwt.getSubject()) || !isUuid(jwt.getClaimAsString(JwtClaimNames.ORGANIZATION_ID))) {
             return failure("Los claims 'sub' y 'org' deben ser UUID");
+        }
+        if (!ROLES.contains(jwt.getClaimAsString(JwtClaimNames.ROLE))) {
+            return failure("El claim 'role' no es un rol de BuildShield");
         }
         Instant issuedAt = jwt.getIssuedAt();
         Instant expiresAt = jwt.getExpiresAt();

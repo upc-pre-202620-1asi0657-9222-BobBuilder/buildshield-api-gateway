@@ -30,7 +30,7 @@ class SecurityTest extends GatewayTestBase {
     static Stream<String> invalidTokens() {
         return Stream.of(TestTokens.expired(), TestTokens.signedByAnotherKey(), TestTokens.withIssuer("buildshield-core"),
                 TestTokens.withoutOrganization(), TestTokens.tooLong(), TestTokens.issuedInTheFuture(),
-                TestTokens.withSubject("not-a-uuid"), "not-a-jwt");
+                TestTokens.withSubject("not-a-uuid"), TestTokens.withRole("SUPERVISOR"), "not-a-jwt");
     }
 
     @ParameterizedTest
@@ -41,6 +41,15 @@ class SecurityTest extends GatewayTestBase {
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody().jsonPath("$.code").isEqualTo("UNAUTHENTICATED");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMINISTRATOR", "WAREHOUSE_MANAGER", "SITE_MANAGER"})
+    void the_three_roles_of_the_architecture_pass(String role) {
+        client().get().uri("/api/v1/worksites")
+                .headers(h -> h.setBearerAuth(TestTokens.withRole(role)))
+                .exchange()
+                .expectStatus().isOk();
     }
 
     @ParameterizedTest
