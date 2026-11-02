@@ -7,6 +7,9 @@ spring:
     gateway:
       server:
         webflux:
+          # Un servicio caído debe responder 503 pronto: sin esto, un host que no contesta tarda 45 s en fallar.
+          httpclient:
+            connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:3000}
           # El gateway resuelve CORS; si un servicio también manda cabeceras CORS o su propio
           # X-Correlation-Id, se conserva solo la primera (la del gateway) para no romper el navegador.
           default-filters:

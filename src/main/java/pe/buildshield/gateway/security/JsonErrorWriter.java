@@ -13,12 +13,12 @@ import java.nio.charset.StandardCharsets;
  * Escribe los errores del gateway con el formato único de BuildShield
  * ({@code {"code","message","details":[]}}), el mismo del Core y de los servicios.
  */
-final class JsonErrorWriter {
+public final class JsonErrorWriter {
 
     private JsonErrorWriter() {
     }
 
-    static Mono<Void> write(ServerWebExchange exchange, HttpStatus status, String code, String message) {
+    public static Mono<Void> write(ServerWebExchange exchange, HttpStatus status, String code, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
