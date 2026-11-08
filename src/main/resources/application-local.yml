@@ -1,0 +1,11 @@
+# Perfil local: los servicios corren como JAR en localhost:8081 a 8088 (scripts/run-all.ps1 de
+# buildshield-platform). La clave pública JWT llega por BUILDSHIELD_JWT_PUBLIC_KEY.
+buildshield:
+  security:
+    # En local se puede ver la tabla de rutas sin token: GET /actuator/gateway/routes
+    additional-public-paths:
+      - /actuator/gateway/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

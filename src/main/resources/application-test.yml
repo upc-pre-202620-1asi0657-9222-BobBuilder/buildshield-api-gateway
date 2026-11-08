@@ -1,0 +1,6 @@
+# Perfil test: las pruebas levantan backends simulados y pasan sus URI y la clave pública por
+# @DynamicPropertySource. Aquí solo se baja el ruido de los logs.
+logging:
+  level:
+    org.springframework.cloud.gateway: WARN
+    reactor.netty: WARN
